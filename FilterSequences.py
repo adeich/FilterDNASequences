@@ -31,7 +31,8 @@ def Main(sFastaFileName, sQualiFileName, sOutputSequenceFileName, sLogFileName, 
 			tReport = oFilterBank.ProcessAndReturnReport(sequence, id_string)
 			oLog.IngestReportAndLog(tReport)
 			if tReport.bPasses_filters:
-				oOuputFile.write(tReport.sOutputLine)
+				oOuputFile.writeline(tReport.output_id)
+				oOuputFile.writeline(tReport.output_seq)
 
 
 
@@ -39,16 +40,16 @@ def Main(sFastaFileName, sQualiFileName, sOutputSequenceFileName, sLogFileName, 
 
 tSequenceReport = namedtuple('tSequenceReport', 
 		['bPasses_filters', 
-			'printready_output_string',
-			'input_id',
-			'input_seq',
-			'output_id',
-			'output_seq',
-			'seq_is_reversed',
-			'start_pos_forward_primer',
-			'end_pos_forward_primer',
-			'start_pos_ending_seq',
-			'end_pos_ending_seq'])
+		'printready_output_string',
+		'input_id',
+		'input_seq',
+		'output_id',
+		'output_seq',
+		'seq_is_reversed',
+		'start_pos_forward_primer',
+		'end_pos_forward_primer',
+		'start_pos_ending_seq',
+		'end_pos_ending_seq'])
 
 # Checks individual sequences against several pattern matchings.
 # Returns a namedtuple report on whether the sequence is fit for inclusion.
