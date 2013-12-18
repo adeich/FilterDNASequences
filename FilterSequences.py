@@ -1,4 +1,5 @@
 from collections import namedtuple
+import SequenceFileZipper as SFZ
 
 
 def Main(sFastaFileName, sQualiFileName, sOutputSequenceFileName, sLogFileName, sTagFileName):
@@ -17,8 +18,8 @@ def Main(sFastaFileName, sQualiFileName, sOutputSequenceFileName, sLogFileName, 
 		open(sLogFileName, 'w') as oLogFile,
 		open(sTagFileName, 'r') as oTagFile:
 
-		# load sequence files into sequence iterator
-		oSeqIterator = seqIterator(oFastaFile, oQualiFile)
+		# load sequence files into sequence generator.
+		oSeqIterator = SFZ.SeqNamedTupleGenerator(oFastaFile, oQualiFile)
 		
 		# create filtering object
 		oFilterBank = FilteringPipeline(oTagFile)
@@ -35,22 +36,6 @@ def Main(sFastaFileName, sQualiFileName, sOutputSequenceFileName, sLogFileName, 
 				oOuputFile.writeline(tReport.output_seq)
 
 
-
-
-
-tSequenceReport = namedtuple('tSequenceReport', 
-		['bPasses_filters', 
-		'printready_output_string',
-		'input_id',
-		'input_seq',
-		'output_id',
-		'output_seq',
-		'seq_is_reversed',
-		'start_pos_forward_primer',
-		'end_pos_forward_primer',
-		'start_pos_ending_seq',
-		'end_pos_ending_seq'])
-
 # Checks individual sequences against several pattern matchings.
 # Returns a namedtuple report on whether the sequence is fit for inclusion.
 class FilteringPipeline:
@@ -66,9 +51,3 @@ class CustomLog:
 
 	def IngestReportAndLog(tReport):
 		pass
-
-# Reads from 1 fasta and 1 quali file. Zips together in iterator-yielding.
-class seqIterator:
-	def __init__(self, oFastaFile, oQualiFile):
-		self.oFastaFile = oFastaFile
-		self.oQualiFile = oQualiFile
