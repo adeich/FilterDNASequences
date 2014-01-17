@@ -1,6 +1,23 @@
 import SequenceFileZipper as SFZ
+import Main
+import FilterBank as FB
+import CustomLog
 
-with open('300LinesTest.fna', 'r') as f, open('300LinesTest.qual', 'r') as q:
-	for seq_idF, seq_idQ, lFContents, lQContents in SFZ.SeqNamedTupleGenerator(f, q):
-		print 'fasta id: ' + seq_idF
-		print 'quali id: ' + seq_idQ
+
+
+b = Main.Main(
+ 	sOutputSequenceFileName='testing_dir/generated_output_seq.txt',
+	sFastaFileName='300LinesTest.fna',
+	sQualiFileName='300LinesTest.qual',
+	sLogFileName='testing_dir/log.txt',
+	sTagFileName='Human6-Tags.txt')
+
+
+with open('testing_dir/test1.txt', 'w') as oTagFile, open('testing_dir/test2.txt', 'w') as oLogFile:
+
+	oLog = CustomLog.Log(oLogFile)
+
+	a = FB.FilterBank(oTagFile, oLog)
+	a.TestAllClasses()
+
+

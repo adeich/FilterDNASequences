@@ -1,53 +1,27 @@
 from collections import namedtuple
-import SequenceFileZipper as SFZ
+import SequenceFileZipper
+import FilterBank
+import CustomLog
 
 
 def Main(sFastaFileName, sQualiFileName, sOutputSequenceFileName, sLogFileName, sTagFileName):
 
-	# set filenames
-	sFastaFileName = ''
-	sQualiFileName = ''
-	sOutputSequenceFileName = 'test.fna'
-	sLogFileName = 'test.log'
-	sTagFileName = 'tag.txt' # tag file is deliberately omitted from github repo.
-
-
-	with open(sOutputSequenceFileName, 'w') as oOuputFile, 
-		open(sFastaFileName, 'r') as oFastaFile,
-		open(sQualiFileName, 'r') as oQualiFile,
-		open(sLogFileName, 'w') as oLogFile,
-		open(sTagFileName, 'r') as oTagFile:
-
-		# load sequence files into sequence generator.
-		oSeqIterator = SFZ.SeqNamedTupleGenerator(oFastaFile, oQualiFile)
-		
-		# create filtering object
-		oFilterBank = FilteringPipeline(oTagFile)
+	with open(sOutputSequenceFileName, 'w') as oOuputFile, open(sFastaFileName, 'r') as oFastaFile, open(sQualiFileName, 'r') as oQualiFile, open(sLogFileName, 'w') as oLogFile, open(sTagFileName, 'r') as oTagFile:
 
 		# create the log object
-		oLog = CustomLog(oLogFile)
+		oLog = CustomLog.Log(oLogFile)
+
+		# load sequence files into sequence generator.
+		oSeqIterator = SequenceFileZipper.SeqNamedTupleGenerator(oFastaFile, oQualiFile)
+		
+		# create filtering object
+		oFilterBank = FilterBank.FilterBank(oTagFile, oLog)
 
 		# iterate through sequences, checking each if it passes the filters.
-		for sequence, id_string in seqIterator:
-			tReport = oFilterBank.ProcessAndReturnReport(sequence, id_string)
+		for sIDString, sSequence, sQualiSequence in oSeqIterator:
+			tReport = oFilterBank.RunCompositeTestOnSequence(sIDString, sSequence, sQualiSequence)
 			oLog.IngestReportAndLog(tReport)
 			if tReport.bPasses_filters:
-				oOuputFile.writeline(tReport.output_id)
-				oOuputFile.writeline(tReport.output_seq)
+				oOuputFile.write(''.join([tReport.output_id, '\n']))
+				oOuputFile.write(''.join([tReport.output_seq, '\n']))
 
-
-# Checks individual sequences against several pattern matchings.
-# Returns a namedtuple report on whether the sequence is fit for inclusion.
-class FilteringPipeline:
-	def __init__(self, oTagFile):
-		self.oTagFile = oTagFile 
-
-	def ProcessAndReturnReport(self, sSequence, id_string):
-		pass
-
-class CustomLog:
-	def __init__(self, oLogFile):
-		self.oLogFile = oLogFile
-
-	def IngestReportAndLog(tReport):
-		pass
