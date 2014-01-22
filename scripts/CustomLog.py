@@ -10,5 +10,6 @@ class Log:
 		self.oLogFile.writeline(sMessage)
 
 	def IngestReportAndLog(self, tReport):
-		pass
+		self.oLogFile.write(str(tReport))
+		self.oLogFile.write('\n')
 		

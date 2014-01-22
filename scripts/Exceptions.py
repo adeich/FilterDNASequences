@@ -2,7 +2,7 @@ class Error(Exception):
 	pass
 
 
-class FastaAndQualiDontMatchError(Error):
+class FastaAndQualiDontMatch(Error):
 	pass
 
 class SequenceIsStupid(Error):
