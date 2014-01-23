@@ -13,7 +13,8 @@ tSequenceReport = namedtuple('tSequenceReport',
 		'start_pos_forward_primer',
 		'end_pos_forward_primer',
 		'start_pos_ending_seq',
-		'end_pos_ending_seq'])
+		'end_pos_ending_seq', 
+		'errors_within_sequence'])
 
 
 sFORWARD_PRIMER = 'CGCAATTCCTTTAGTTGTTC'

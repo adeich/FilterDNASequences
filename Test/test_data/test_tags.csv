@@ -1,0 +1,7 @@
+ORIGIN,LABEL,TAG
+testpatient1,BoneMarrow,ATT
+testpatient1,Fat,ACTA
+testpatient1,LiverTumor1,ATA
+testpatient1,Skin,ATC
+testpatient2,CX7C,AATC
+testpatient2,CX8C,ACA
