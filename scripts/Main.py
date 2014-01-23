@@ -19,7 +19,7 @@ def Main(sFastaFileName, sQualiFileName, sOutputSequenceFileName, sLogFileName, 
 
 		# iterate through sequences, checking each if it passes the filters.
 		for sIDString, sSequence, sQualiSequence in oSeqIterator:
-			tReport = oFilterBank.RunCompositeTestOnSequence(sIDString, sSequence, sQualiSequence)
+			tReport = oFilterBank.RunCompositeAnalysisOnSequence(sIDString, sSequence, sQualiSequence)
 			oLog.IngestReportAndLog(tReport)
 			if tReport.bPasses_filters:
 				oOuputFile.write(''.join([tReport.output_id, '\n']))

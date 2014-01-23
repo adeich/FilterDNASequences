@@ -22,4 +22,4 @@ with open('../test_data/test_tags.csv', 'r') as oTagFile, open('../testing_dir/t
 
 	print str(a.oLoadedTags.ReturnTagList())
 	print str(a.ClassesDict['IsATissueTag'].dAllPossibleSubtags)
-	print str(a.ClassesDict['IsATissueTag'].Run('ATT'))
+

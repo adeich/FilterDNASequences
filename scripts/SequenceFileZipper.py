@@ -58,11 +58,11 @@ def SeqNamedTupleGenerator(oFastaFile, oQualiFile):
 		sFastaSeqID = oSeqIDComplexRegex.match(sFastaSeqIDLine).group(1)
 		sQualiSeqID = oSeqIDComplexRegex.match(sQualiSeqIDLine).group(1)
 
-	#	sInputSeq = 'hello'
-	#	sInputID = sFastaSeqID
 		sEntireIDInputLine = sFastaSeqIDLine
-		sFastaSequence = str(lFastaContentLines)
-		sQualiSequence = str(lQualiContentLines)
+
+		# Concatenate lists of the content lines by custom rules for each.
+		sFastaSequence = ''.join([x.strip() for x in lFastaContentLines])
+		sQualiSequence = ''.join([x.replace('\n', '') for x in lQualiContentLines])
 
 		# Should yield input_id, input_id_metadata, fasta_sequence, quali_sequence.
 		yield sEntireIDInputLine, sFastaSequence, sQualiSequence
