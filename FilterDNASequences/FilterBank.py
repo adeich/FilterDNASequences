@@ -55,18 +55,6 @@ class FilterBank:
 		self.oContainsBothFlankingSequences = SequenceAnalysisClasses.ContainsBothFlankingSequences()
 		self.oContainsBothFlankingSequences_Complement = SequenceAnalysisClasses.ContainsBothFlankingSequences_Complement()
 
-	
-	# temporary test class; should be moved to the unit_test script.
-		
-	def TestAllClasses(self):
-		pass
-#		for oClass in self.ClassesDict:
-#			try:
-#				self.ClassesDict[oClass].TestSelf()
-#			except AttributeError as e:
-#				oLog.Log("Looks like a testing class is missing the TestSelf() method")
-#				raise	
-				
 
 	# Returns a ConstantsAndStructures.tSequenceReport namedtuple.
 	def RunCompositeAnalysisOnSequence(self, sIDString, sCompleteSequence, sQualiSequence):
@@ -76,18 +64,18 @@ class FilterBank:
 		lErrorsWithinSequence = []
 
 		# is sequence in forward direction?
-		if self.oContainsForwardAndReversePrimers.Run(sCompleteSequence):
+		if self.oContainsForwardAndReversePrimers.Ask(sCompleteSequence):
 			bSequenceIsReversed = False
 
 			# does sequence contain proper forward and reverse primers?
-			if not self.oContainsBothFlankingSequences.Run(sCompleteSequence):
+			if not self.oContainsBothFlankingSequences.Ask(sCompleteSequence):
 				oFailureRecorder.SetFailureStatus()
 				lErrorsWithinSequence.append('Flanking sequences aren\'t right.')
 
 			# does sequence begin with a proper tissue tag?
 			sPossibleTissueTag = self.oContainsForwardAndReversePrimers.ReturnSequencePrependingForwardPrimer(
 					sCompleteSequence)
-			if not self.oIsATissueTag.Run(sPossibleTissueTag, bMatchEntireTagOnly=False):
+			if not self.oIsATissueTag.Ask(sPossibleTissueTag, bMatchEntireTagOnly=False):
 				oFailureRecorder.SetFailureStatus()
 				lErrorsWithinSequence.append('Tissue tag does not match tests.')
 
@@ -96,9 +84,9 @@ class FilterBank:
 
 
 		# otherwise, is sequence in reverse direction?
-		elif self.oContainsForwardAndReversePrimers_Complement.Run(sCompleteSequence):
+		elif self.oContainsForwardAndReversePrimers_Complement.Ask(sCompleteSequence):
 			bSequenceIsReversed = True
-			if self.oContainsBothFlankingSequences_Complement.Run(sCompleteSequence):
+			if self.oContainsBothFlankingSequences_Complement.Ask(sCompleteSequence):
 				pass
 				# if begins with tissue tag
 				# if insert sequence passes tests

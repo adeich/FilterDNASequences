@@ -23,7 +23,6 @@ with open('test_data/test_tags.csv', 'r') as oTagFile, open('test_output_dump/lo
 	oLog = CustomLog.Log(oLogFile)
 
 	a = FB.FilterBank(oTagFile, oLog)
-	a.TestAllClasses()
 
 	print str(a.oLoadedTags.ReturnTagList())
 	print str(a.oIsATissueTag.dAllPossibleSubtags)
