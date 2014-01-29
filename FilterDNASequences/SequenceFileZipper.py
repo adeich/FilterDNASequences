@@ -1,6 +1,7 @@
 import re
 from collections import namedtuple
 import ConstantsAndStructures as CS
+import Exceptions
 
 
 # This regex looks for the sequence ID line which should be preceding every set of lines 
@@ -22,7 +23,7 @@ def GetNextSeq_Generator(oSeqFile, iStartPosition=0):
 	# first line read must be a sequence ID.
 	sCurrentIDLine = oSeqFile.readline()
 	if not oSeqIDSimpleRegex.match(sCurrentIDLine):
-		raise BaseException('first line should be a sequence ID')
+		raise BaseException('first line should be a sequence ID. File is {}'.format(oSeqFile.name))
 
 	# get ensuing lines until next sequence ID line.
 	sNextLine = oSeqFile.readline()
@@ -52,11 +53,19 @@ def SeqNamedTupleGenerator(oFastaFile, oQualiFile):
 	oFastaFileIterator = GetNextSeq_Generator(oFastaFile)
 	oQualiFileIterator = GetNextSeq_Generator(oQualiFile)
 
-	for sFastaSeqIDLine, lFastaContentLines in oFastaFileIterator:
+	# Iterate through the fasta file, and for each iteration,
+	# take one step also in the quali file.
+	for iIDCounter, (sFastaSeqIDLine, lFastaContentLines) in enumerate(oFastaFileIterator):
 		sQualiSeqIDLine, lQualiContentLines = oQualiFileIterator.next()
 
+		# Get the sequence ID from both fasta and quali. If they don't match, throw error.
 		sFastaSeqID = oSeqIDComplexRegex.match(sFastaSeqIDLine).group(1)
 		sQualiSeqID = oSeqIDComplexRegex.match(sQualiSeqIDLine).group(1)
+		if not sFastaSeqID == sQualiSeqID:
+			raise Exceptions.FastaAndQualiDontMatch(
+				'{} sequences in, ID lines {} and {} don\'t match.'.format(iIDCounter,
+					sFastaSeqIDLine, sQualiSeqIDLine))
+
 
 		sEntireIDInputLine = sFastaSeqIDLine
 

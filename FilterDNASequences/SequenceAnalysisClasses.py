@@ -1,7 +1,7 @@
 import re 
 from collections import namedtuple
 import Exceptions
-import ConstantsAndStructures
+# import SequenceConstantsObject
 
 
 class SequenceSubstringCheck:
@@ -20,9 +20,9 @@ class SequenceSubstringCheck:
 
 
 class ContainsForwardAndReversePrimers(SequenceSubstringCheck):
-	def __init__(self):
-		self.sRegex = '(.*){}.+{}.*'.format(ConstantsAndStructures.sFORWARD_PRIMER,
-			ConstantsAndStructures.sREVERSE_PRIMER)
+	def __init__(self, SequenceConstantsObject):
+		self.sRegex = '(.*){}.+{}.*'.format(SequenceConstantsObject.sFORWARD_PRIMER,
+			SequenceConstantsObject.sREVERSE_PRIMER)
 		self.oCompiledRegex = re.compile(self.sRegex)
 	def ReturnSequencePrependingForwardPrimer(self, sCompleteSequence):
 		return self.oCompiledRegex.search(sCompleteSequence).group(1)
@@ -30,7 +30,7 @@ class ContainsForwardAndReversePrimers(SequenceSubstringCheck):
 		return bool(self.oCompiledRegex.search(sDNAString))
 #	def TestSelf(self):
 #		# sequences which should succeed:
-#		CSdU = ConstantsAndStructures.dUnitTestSequences
+#		CSdU = SequenceConstantsObject.dUnitTestSequences
 #		for sUnitTestSequence in [CSdU['everything good # 1'], CSdU['everything good # 2']]:
 #			if self.Ask(sUnitTestSequence) == False:
 #				raise Exceptions.SequenceCheckUnitTestFail('ContainsForwardAndReversePrimers1')
@@ -43,16 +43,16 @@ class ContainsForwardAndReversePrimers(SequenceSubstringCheck):
 #				
 
 class ContainsForwardAndReversePrimers_Complement(SequenceSubstringCheck):
-	def __init__(self):
-		self.sRegex = '(.*){}.+{}.*'.format(ConstantsAndStructures.sREVERSE_PRIMER_COMPLEMENT,
-			ConstantsAndStructures.sFORWARD_PRIMER_COMPLEMENT,)
+	def __init__(self, SequenceConstantsObject):
+		self.sRegex = '(.*){}.+{}.*'.format(SequenceConstantsObject.sREVERSE_PRIMER_COMPLEMENT,
+			SequenceConstantsObject.sFORWARD_PRIMER_COMPLEMENT,)
 		self.oCompiledRegex = re.compile(self.sRegex)
 	def Ask(self, sCompleteSequence):
 		return bool(self.oCompiledRegex.search(sCompleteSequence))
 	# This is for getting the sequence which might be the tissue tag.
 #	def TestSelf(self):
 #		# sequences which should succeed:
-#		CSdU = ConstantsAndStructures.dUnitTestSequences
+#		CSdU = SequenceConstantsObject.dUnitTestSequences
 #		for sUnitTestSequence in [CSdU['everything good # 3 (reversed and with complement)'],
 #			CSdU['everything good # 4 (reversed and with complement)']]:
 #			if self.Ask(sUnitTestSequence) == False:
@@ -67,15 +67,15 @@ class ContainsForwardAndReversePrimers_Complement(SequenceSubstringCheck):
 
 class IsATissueTag(SequenceSubstringCheck):
 
-	def __init__(self, lTissueTagTupleList):
+	def __init__(self, SequenceConstantsObject, lTissueTagTupleList):
 		self.oCompiledRegex = None
-		self.dAllPossibleSubtags = self.FillOutAllPossibleSubstrings(lTissueTagTupleList)
 		self.lAllCompleteTags = set([sTuple.tag for sTuple in lTissueTagTupleList])
+		self.dAllPossibleSubtags = self.FillOutAllPossibleSubstrings(self.lAllCompleteTags)
 
 	# this is run on class init, but can be run at other times for testing.
-	def FillOutAllPossibleSubstrings(self, lTissueTagTupleList):
+	def FillOutAllPossibleSubstrings(self, lTags):
 		dAllPossibleSubtags = {}
-		for sTag in [sTuple.tag for sTuple in lTissueTagTupleList]:
+		for sTag in lTags:
 			# Only include subtags down to length 3, because we're not accepting any shorter.
 			for iStartPos in range(0, len(sTag) - 2):
 				sSubTag = sTag[iStartPos:]
@@ -97,16 +97,27 @@ class IsATissueTag(SequenceSubstringCheck):
 				bIsTissueTag = True
 		return bIsTissueTag
 
-	# used for debugging
+	# used only for unit testing.
 	def GetTagsAndPartialTags(self):
 		return {'tags': self.lAllCompleteTags, 'partial_tags': self.dAllPossibleSubtags}
 
+	# used only for unit testing.
+	def AddTag(self, sTag):
+		self.lAllCompleteTags.add(sTag)
+		self.dAllPossibleSubtags = self.FillOutAllPossibleSubstrings(self.lAllCompleteTags)
+
+	# used only for unit testing.
+	def ClearAllTags(self):
+		self.lAllCompleteTags = []
+		self.dAllPossibleSubtags = {}
+		
+
 class ContainsBothFlankingSequences(SequenceSubstringCheck):
 
-	def __init__(self):
+	def __init__(self, SequenceConstantsObject):
 		self.sRegex = '.+{}(.+){}.+'.format(
-			ConstantsAndStructures.sBEGINNING_FLANKING_SEQUENCE, 
-			ConstantsAndStructures.sENDING_FLANKING_SEQUENCE)
+			SequenceConstantsObject.sBEGINNING_FLANKING_SEQUENCE, 
+			SequenceConstantsObject.sENDING_FLANKING_SEQUENCE)
 		self.oCompiledRegex = re.compile(self.sRegex)
 
 	def ReturnInsertSequence(self, sCompleteSequence):
@@ -130,7 +141,7 @@ class ContainsBothFlankingSequences(SequenceSubstringCheck):
 
 	def TestSelf(self):
 		# sequences which should succeed:
-		CSdU = ConstantsAndStructures.dUnitTestSequences
+		CSdU = SequenceConstantsObject.dUnitTestSequences
 		for sUnitTestSequence in [CSdU['everything good # 1'], CSdU['everything good # 2']]:
 			if self.Ask(sUnitTestSequence) == False:
 				raise Exceptions.SequenceCheckUnitTestFail('ContainsBothFlankingSequences 1')
@@ -143,10 +154,10 @@ class ContainsBothFlankingSequences(SequenceSubstringCheck):
 				
 
 class ContainsBothFlankingSequences_Complement(SequenceSubstringCheck):
-	def __init__(self):
+	def __init__(self, SequenceConstantsObject):
 		self.sRegex = '.+{}(.+){}.+'.format(
-			ConstantsAndStructures.sENDING_FLANKING_SEQUENCE_COMPLEMENT,
-			ConstantsAndStructures.sBEGINNING_FLANKING_SEQUENCE_COMPLEMENT)
+			SequenceConstantsObject.sENDING_FLANKING_SEQUENCE_COMPLEMENT,
+			SequenceConstantsObject.sBEGINNING_FLANKING_SEQUENCE_COMPLEMENT)
 		self.oCompiledRegex = re.compile(self.sRegex)
 	def ReturnInsertSequence(self, sCompleteSequence):
 		sInsertSequence = None
@@ -158,7 +169,7 @@ class ContainsBothFlankingSequences_Complement(SequenceSubstringCheck):
 	def Ask(self, sCompleteSequence):
 		return bool(self.oCompiledRegex.search(sCompleteSequence))
 	def TestSelf(self):
-		CSdU = ConstantsAndStructures.dUnitTestSequences
+		CSdU = SequenceConstantsObject.dUnitTestSequences
 		# sequences which should succeed:
 		for sUnitTestSequence in [CSdU['everything good # 3 (reversed and with complement)'],
 			CSdU['everything good # 4 (reversed and with complement)']]:

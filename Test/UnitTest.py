@@ -19,8 +19,8 @@ class AnalysisClassTestCase(unittest.TestCase):
 				for sTag in lTagList:
 					oFile.write('UnitTest.py,no_label,{}\n'.format(sTag))
 
-		self.lTestTags = ['ABCDE', 'BCDEF', 'CDEFG']
-		self.sTestTagFileName = 'test_data/test_tags.csv'
+		self.lTestTags = ['ABCDE', 'BCDEF', 'CDEFG', 'DDEFG']
+		self.sTestTagFileName = 'test_data/test_tags_from_UnitTest.csv'
 		CreateTestTagFile(self.sTestTagFileName, self.lTestTags)
 
 		self.oTagFile = open(self.sTestTagFileName, 'r')
@@ -61,7 +61,7 @@ class AnalysisClassTestCase(unittest.TestCase):
 		# Test that *full* tags are recognized.
 		for sTissueTag in self.lTestTags:
 			self.assertTrue(Ask(sTissueTag, bMatchEntireTagOnly = True), 
-				'The sequence \'{}\' should be succeeding for the tags {}'.format(sTissueTag, 
+				'The sequence \'{}\' should be a member of the tags {}'.format(sTissueTag, 
 					self.oFilterBank.oIsATissueTag.GetTagsAndPartialTags()['tags']))
 			self.assertTrue(Ask(sTissueTag, bMatchEntireTagOnly = False)) 
 		for sPartialTag in lSomePartialTags:
@@ -69,10 +69,20 @@ class AnalysisClassTestCase(unittest.TestCase):
 			
 		# Test that *partial* tags are recognized.
 		for sPartialTag in lSomePartialTags:
-			self.assertTrue(Ask(sPartialTag, bMatchEntireTagOnly = False),
-				'The tag \'{}\' should be succeeding for the tags {}'.format(sPartialTag, 
-					self.oFilterBank.oIsATissueTag.GetTagsAndPartialTags()['partial_tags']))
+			if self.oFilterBank.oIsATissueTag.GetTagsAndPartialTags()['partial_tags'][sPartialTag] < 1:
+				self.assertTrue(Ask(sPartialTag, bMatchEntireTagOnly = False),
+					'The tag \'{}\' should be a member of the tags {}'.format(sPartialTag, 
+						self.oFilterBank.oIsATissueTag.GetTagsAndPartialTags()['partial_tags']))
+			else:
+				self.assertFalse(Ask(sPartialTag, bMatchEntireTagOnly = False),
+					'The tag \'{}\' should be a member of the tags {}'.format(sPartialTag, 
+						self.oFilterBank.oIsATissueTag.GetTagsAndPartialTags()['partial_tags']))
 			self.assertFalse(Ask(sPartialTag, bMatchEntireTagOnly = True))
+
+		# Test the AddTag function.
+		sRandomTagName = 'Whoa!TotallyRandomTag!'
+		self.oFilterBank.oIsATissueTag.AddTag(sRandomTagName)
+		self.assertTrue(Ask(sRandomTagName, bMatchEntireTagOnly = True))
 		
 	def test_ContainsBothFlankingSequences(self):
 		pass		
@@ -82,7 +92,29 @@ class AnalysisClassTestCase(unittest.TestCase):
 		pass		
 
 
+class FilterBankTestCase(unittest.TestCase):
+	
+	def setUp(self):
+		self.oTagFile = open('test_data/test_tags.csv', 'r') 
+		self.oLogFile = open('test_output_dump/log.txt', 'w') 
+		self.oLog = CustomLog.Log(self.oLogFile)
+		self.oFilterBank = FilterBank.FilterBank(self.oTagFile, self.oLog)
 
+	def tearDown(self):
+		self.oTagFile.close()
+		self.oLogFile.close()
+
+
+	def	test_CorrectSequencesSucceed(self):
+		self.oFilterBank.oIsATissueTag.AddTag('AGTCAT')
+		tReport1 = self.oFilterBank.RunCompositeAnalysisOnSequence(
+			sIDString = None,
+			sCompleteSequence = CAS.dUnitTestSequences['correct_normal_form_1'],
+			sQualiSequence = None,
+			bSuppressQualiChecks = True)
+
+		self.assertTrue(tReport1.bPasses_filters, 'custom errors: {}'.format(
+			tReport1.errors_within_sequence))
 
 
 if __name__ == '__main__':
