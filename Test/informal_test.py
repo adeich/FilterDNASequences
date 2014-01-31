@@ -18,7 +18,7 @@ b = Main.Main(
 	sTagFileName='test_data/test_tags.csv')
 
 
-with open('test_data/test_tags.csv', 'r') as oTagFile, open('test_output_dump/log.txt', 'w') as oLogFile:
+with open('test_data/test_tags.csv', 'r') as oTagFile, open('test_output_dump/log2.txt', 'w') as oLogFile:
 
 	oLog = CustomLog.Log(oLogFile)
 

@@ -150,8 +150,8 @@ class FilterBank:
 			output_id = sIDString,
 			output_seq = sCompleteSequence,
 			seq_is_reversed = bSequenceIsReversed,
-			start_pos_forward_primer = (tInsSeqBegEndPos[0] if tInsSeqBegEndPos else None),
-			end_pos_forward_primer = (tInsSeqBegEndPos[1] if tInsSeqBegEndPos else None),
+			start_pos_forward_primer = None,
+			end_pos_forward_primer = None,
 			start_pos_ending_seq = 0,
 			end_pos_ending_seq = 0,
 			errors_within_sequence = lErrorsWithinSequence

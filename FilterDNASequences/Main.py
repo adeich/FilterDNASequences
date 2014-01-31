@@ -24,4 +24,7 @@ def Main(sFastaFileName, sQualiFileName, sOutputSequenceFileName, sLogFileName, 
 			if tReport.bPasses_filters:
 				oOuputFile.write(''.join([tReport.output_id, '\n']))
 				oOuputFile.write(''.join([tReport.output_seq, '\n']))
+		
+		oLog.AddAnalysisReport()
+
 
