@@ -10,9 +10,9 @@ from Bio.Alphabet import IUPAC
 
 class FilterBank:
 
-	# Called by FilterBank __init__.
 	# This class parses the csv file of tissue tags and can return them as a 
 	# list of namedtuples.
+	# This class used by FilterBank __init__().
 	class TissueTagLoader:
 
 		def __init__(self, oTissueTagFile):
@@ -85,19 +85,17 @@ class FilterBank:
 		self.oLog = oLog
 		self.oTagFile = oTagFile
 		self.oLoadedTags = self.TissueTagLoader(oTagFile)
-
 		self.oIsATissueTag = SequenceAnalysisClasses.IsATissueTag(
 			self.SequenceConstants, self.oLoadedTags.ReturnTagList())
-
 		self.oContainsForwardAndReversePrimers = SequenceAnalysisClasses.ContainsForwardAndReversePrimers(
 			self.SequenceConstants)
-
-		self.oContainsForwardAndReversePrimers_Complement = SequenceAnalysisClasses.ContainsForwardAndReversePrimers_Complement(self.SequenceConstants)
-
+		self.oContainsForwardAndReversePrimers_Complement = SequenceAnalysisClasses.ContainsForwardAndReversePrimers_Complement(
+			self.SequenceConstants)
 		self.oContainsBothFlankingSequences = SequenceAnalysisClasses.ContainsBothFlankingSequences(
 			self.SequenceConstants)
-
-		self.oContainsBothFlankingSequences_Complement = SequenceAnalysisClasses.ContainsBothFlankingSequences_Complement(self.SequenceConstants)
+		self.oContainsBothFlankingSequences_Complement = SequenceAnalysisClasses.ContainsBothFlankingSequences_Complement(
+			self.SequenceConstants)
+		self.oQualiInsertSequenceAllAboveThreshold = SequenceAnalysisClasses.QualiInsertSequenceAllAboveThreshold()
 
 
 	# Returns a ConstantsAndStructures.tSequenceReport namedtuple.
@@ -112,7 +110,7 @@ class FilterBank:
 		if self.oContainsForwardAndReversePrimers.Ask(sCompleteSequence):
 			bSequenceIsReversed = False
 
-			# does sequence contain proper forward and reverse primers?
+			# does sequence contain proper flanking sequences?
 			if not self.oContainsBothFlankingSequences.Ask(sCompleteSequence):
 				oFailureRecorder.SetFailureStatus()
 				lErrorsWithinSequence.append('Flanking sequences aren\'t right.')
@@ -125,12 +123,21 @@ class FilterBank:
 				lErrorsWithinSequence.append('Tissue tag does not match tests.')
 
 			# does the insert sequence pass its tests?
-			tInsSeqBegEndPos = self.oContainsBothFlankingSequences.ReturnInsSeqBegEndPos(sCompleteSequence)
-
+			if not bSuppressQualiChecks:
+				#sInsSequence = self.oContainsBothFlankingSequences.ReturnInsertSequence(sCompleteSequence)
+				tInsSeqBegEndPos = self.oContainsBothFlankingSequences.ReturnInsSeqBegEndPos(sCompleteSequence)
+				if not self.oQualiInsertSequenceAllAboveThreshold.Ask(sQualiSequence, tInsSeqBegEndPos):
+					oFailureRecorder.SetFailureStatus()
+					lErrorsWithinSequence.append('Quali sequence does not pass tests.')
 
 		# otherwise, is sequence in reverse direction?
 		elif self.oContainsForwardAndReversePrimers_Complement.Ask(sCompleteSequence):
 			bSequenceIsReversed = True
+			
+			# Call all bad for now.
+			oFailureRecorder.SetFailureStatus()
+			lErrorsWithinSequence.append('Is in reversed direction. Not accepting for now')
+			
 			if self.oContainsBothFlankingSequences_Complement.Ask(sCompleteSequence):
 				pass
 				# if begins with tissue tag
@@ -147,6 +154,7 @@ class FilterBank:
 			printready_output_string = 'hello',
 			input_id = sIDString,
 			input_seq = sCompleteSequence,
+			input_quali_seq = sQualiSequence,
 			output_id = sIDString,
 			output_seq = sCompleteSequence,
 			seq_is_reversed = bSequenceIsReversed,

@@ -85,11 +85,67 @@ class AnalysisClassTestCase(unittest.TestCase):
 		self.assertTrue(Ask(sRandomTagName, bMatchEntireTagOnly = True))
 		
 	def test_ContainsBothFlankingSequences(self):
-		pass		
+		sCorrectExample = 'XXX{}XXX{}XXX'.format(
+			self.oFilterBank.SequenceConstants.sBEGINNING_FLANKING_SEQUENCE,
+			self.oFilterBank.SequenceConstants.sENDING_FLANKING_SEQUENCE)
+				
+		# lacks beginning flanking sequence.
+		sIncorrectExample = 'XXXXXX{}XXX'.format(
+			self.oFilterBank.SequenceConstants.sENDING_FLANKING_SEQUENCE)
+
+		Ask = self.oFilterBank.oContainsBothFlankingSequences.Ask
+
+		self.assertTrue(Ask(sCorrectExample))
+		self.assertFalse(Ask(sIncorrectExample))
 		
 
 	def test_ContainsBothFlankingSequences_Complement(self):
-		pass		
+		sCorrectExample = 'XXX{}XXX{}XXX'.format(
+			self.oFilterBank.SequenceConstants.sENDING_FLANKING_SEQUENCE_COMPLEMENT,
+			self.oFilterBank.SequenceConstants.sBEGINNING_FLANKING_SEQUENCE_COMPLEMENT)
+				
+		# lacks beginning flanking sequence.
+		sIncorrectExample = 'XXXXXX{}XXX'.format(
+			self.oFilterBank.SequenceConstants.sENDING_FLANKING_SEQUENCE)
+
+		Ask = self.oFilterBank.oContainsBothFlankingSequences_Complement.Ask
+
+		self.assertTrue(Ask(sCorrectExample))
+		self.assertFalse(Ask(sIncorrectExample))
+
+	def test_QualiInsertSequenceAllAboveThreshold(self):
+		Ask = self.oFilterBank.oQualiInsertSequenceAllAboveThreshold.Ask
+
+		sOuterStuff = 'XXX'
+		sInsertSequence = 'INSERTSEQUENCE'
+		sCorrectExample = '{stuff1}{beginning_flank}{insert}{ending_flank}{stuff2}'.format(
+			stuff1 = sOuterStuff,
+			beginning_flank = self.oFilterBank.SequenceConstants.sBEGINNING_FLANKING_SEQUENCE,
+			insert = sInsertSequence,
+			ending_flank = self.oFilterBank.SequenceConstants.sENDING_FLANKING_SEQUENCE,
+			stuff2 = sOuterStuff
+			)
+
+		tInsSeqBegEndPos = self.oFilterBank.oContainsBothFlankingSequences.ReturnInsSeqBegEndPos(sCorrectExample)
+
+		sCorrectQualiSequence = '{stuff1} {beginning_flank} {insert} {ending_flank} {stuff2}'.format(
+			stuff1 = ' '.join(['10' for i in range(len(sOuterStuff))]),
+			beginning_flank = ' '.join(['05' for i in range(len(self.oFilterBank.SequenceConstants.sBEGINNING_FLANKING_SEQUENCE))]),
+			insert = ' '.join(['25' for i in range(len(sInsertSequence))]),
+			ending_flank = ' '.join(['05' for i in range(len(self.oFilterBank.SequenceConstants.sENDING_FLANKING_SEQUENCE))]),
+			stuff2 = ' '.join(['10' for i in range(len(sOuterStuff))])
+			)
+
+		self.assertTrue(Ask(sCorrectQualiSequence, tInsSeqBegEndPos))
+
+		#                    0  1  2  3  4  5  6  7  8  9  10 11 12 13 14 15 16 17 18 19
+		sQualiSnippetGood = '10 11 12 20 20 20 25 25 25 20 20 20 25 25 25 20 20 12 11 10'
+		sQualiSnippetBad =  '10 11 12 20 20 20 19 00 25 20 20 20 25 25 25 20 20 12 11 10'
+
+		self.assertTrue(Ask(sQualiSnippetGood, (3, 17))) 
+		# False because includes an integer lower than 20 (12)
+		self.assertFalse(Ask(sQualiSnippetGood, (2, 17))) 
+		self.assertFalse(Ask(sQualiSnippetBad, (3, 17)))
 
 
 class FilterBankTestCase(unittest.TestCase):
@@ -103,7 +159,6 @@ class FilterBankTestCase(unittest.TestCase):
 	def tearDown(self):
 		self.oTagFile.close()
 		self.oLogFile.close()
-
 
 	def	test_CorrectSequencesSucceed(self):
 		self.oFilterBank.oIsATissueTag.AddTag('AGTCAT')

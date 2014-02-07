@@ -21,7 +21,7 @@ def GetNextSeq_Generator(oSeqFile, iStartPosition=0):
 		oSeqFile.seek(iStartPosition)
 	
 	# first line read must be a sequence ID.
-	sCurrentIDLine = oSeqFile.readline()
+	sCurrentIDLine = oSeqFile.readline().strip()
 	if not oSeqIDSimpleRegex.match(sCurrentIDLine):
 		raise BaseException('first line should be a sequence ID. File is {}'.format(oSeqFile.name))
 
@@ -31,7 +31,7 @@ def GetNextSeq_Generator(oSeqFile, iStartPosition=0):
 	while sNextLine:
 		if oSeqIDSimpleRegex.match(sNextLine):
 			yield sCurrentIDLine, lSeqContentLines
-			sCurrentIDLine = sNextLine
+			sCurrentIDLine = sNextLine.strip()
 			# empty the list of sequence content strings.
 			del(lSeqContentLines[:])
 		else:

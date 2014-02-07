@@ -1,6 +1,7 @@
 import re 
 from collections import namedtuple
 import Exceptions
+import types
 # import SequenceConstantsObject
 
 
@@ -28,19 +29,7 @@ class ContainsForwardAndReversePrimers(SequenceSubstringCheck):
 		return self.oCompiledRegex.search(sCompleteSequence).group(1)
 	def Ask(self, sDNAString):
 		return bool(self.oCompiledRegex.search(sDNAString))
-#	def TestSelf(self):
-#		# sequences which should succeed:
-#		CSdU = SequenceConstantsObject.dUnitTestSequences
-#		for sUnitTestSequence in [CSdU['everything good # 1'], CSdU['everything good # 2']]:
-#			if self.Ask(sUnitTestSequence) == False:
-#				raise Exceptions.SequenceCheckUnitTestFail('ContainsForwardAndReversePrimers1')
-#		# sequences which should fail:
-#		for sUnitTestSequence in [CSdU['everything good # 3 (reversed and with complement)'],
-#			CSdU['forward primer has random char inserted']]:
-#			if self.Ask(sUnitTestSequence) == True:
-#				raise Exceptions.SequenceCheckUnitTestFail('ContainsForwardAndReversePrimers2')
-#		print 'Tested self from ContainsForwardAndReversePrimers'
-#				
+
 
 class ContainsForwardAndReversePrimers_Complement(SequenceSubstringCheck):
 	def __init__(self, SequenceConstantsObject):
@@ -49,21 +38,7 @@ class ContainsForwardAndReversePrimers_Complement(SequenceSubstringCheck):
 		self.oCompiledRegex = re.compile(self.sRegex)
 	def Ask(self, sCompleteSequence):
 		return bool(self.oCompiledRegex.search(sCompleteSequence))
-	# This is for getting the sequence which might be the tissue tag.
-#	def TestSelf(self):
-#		# sequences which should succeed:
-#		CSdU = SequenceConstantsObject.dUnitTestSequences
-#		for sUnitTestSequence in [CSdU['everything good # 3 (reversed and with complement)'],
-#			CSdU['everything good # 4 (reversed and with complement)']]:
-#			if self.Ask(sUnitTestSequence) == False:
-#				raise Exceptions.SequenceCheckUnitTestFail('ContainsForwardAndReversePrimers_Complement1')
-#		# sequences which should fail:
-#		for sUnitTestSequence in [CSdU['everything good # 1'],
-#			CSdU['forward primer has random char inserted']]:
-#			if self.Ask(sUnitTestSequence) == True:
-#				raise Exceptions.SequenceCheckUnitTestFail('ContainsForwardAndReversePrimers_Complement2')
-#		print	'tested self from ContainsForwardAndReversePrimers_Complement()'
-#
+
 
 class IsATissueTag(SequenceSubstringCheck):
 
@@ -128,13 +103,15 @@ class ContainsBothFlankingSequences(SequenceSubstringCheck):
 			sInsertSequence = 'no insert sequence pattern matched.'
 		return sInsertSequence
 
+	# Return None for tuple if flanking sequences are not found.
 	def ReturnInsSeqBegEndPos(self, sCompleteSequence):
 		tInsSeqBegEndPos = None
 		try:
-			tInsSeqBegEndPos = self.oCompiledRegex.search(sCompleteSequence).span(1)
+			if self.oCompiledRegex.search(sCompleteSequence):
+				tInsSeqBegEndPos = self.oCompiledRegex.search(sCompleteSequence).span(1)
+			return tInsSeqBegEndPos
 		except AttributeError as e:
-			pass
-		return tInsSeqBegEndPos
+			raise	
 
 	def Ask(self, sCompleteSequence):
 		return bool(self.oCompiledRegex.search(sCompleteSequence))
@@ -207,16 +184,38 @@ class QualiInsertSequenceAllAboveThreshold(SequenceSubstringCheck):
 	def __init__(self):
 		pass
 
-	def GetQualiInsertSubsequence(sQualiSequence, tInsSeqBegEndPos):
-		QualiSequenceIsValid(sQualiSequence) # look for errors
-		sSplitString = [int(sDigits) for sDigits in sQualiSequence.split(' ')]
-		return sSplitString[tInsSeqBegEndPos[0]:tInsSeqBegEndPos[1]]		
+	def GetQualiInsertSubsequence(self, sQualiSequence, tInsSeqBegEndPos):
+		# QualiSequenceIsValid(sQualiSequence) # look for errors
+		sReturnSubsequence = None
+		try:
+			if isinstance(tInsSeqBegEndPos, types.NoneType):
+				sReturnSubsequence = None
+			elif isinstance(tInsSeqBegEndPos, tuple):
+				sSplitString = [int(sDigits) for sDigits in sQualiSequence.strip().split(' ')]
+				sReturnSubsequence = sSplitString[tInsSeqBegEndPos[0]:tInsSeqBegEndPos[1]]		
+			else:
+				raise AttributeError('tInsSeqBegEndPos is of unexpected type: {}'.format(
+					type(tInsSeqBegEndPos)))
+		except (AttributeError, ValueError) as e:
+			print 'tInsSeqBegEndPos is {}'.format(tInsSeqBegEndPos)
+			print 'sQualiSequence is {}'.format(sQualiSequence)
+			raise
+
+
+		return sReturnSubsequence
 
 	def Ask(self, sQualiSequence, tInsSeqBegEndPos):
-		sQualiInsertSequence = GetQualiInsertSubsequence(sQualiSequence, tInsSeqBegEndPos)
-		for iInteger in sInsertSequence:
-			if iInteger < 20:
-				return False
-		return True
+		sQualiInsertSequence = self.GetQualiInsertSubsequence(sQualiSequence, tInsSeqBegEndPos)
+		if sQualiInsertSequence is None:
+			return False
+		else:
+			try:
+				for iInteger in sQualiInsertSequence:
+					if iInteger < 20:
+						return False
+				return True
+			except TypeError as e:
+				print 'sQualiInsertSequence is \'{}\''.format(sQualiInsertSequence)
+				raise
 
 

@@ -7,6 +7,7 @@ tSequenceReport = namedtuple('tSequenceReport',
 		'printready_output_string',
 		'input_id',
 		'input_seq',
+		'input_quali_seq',
 		'output_id',
 		'output_seq',
 		'seq_is_reversed',
@@ -40,7 +41,4 @@ dUnitTestSequences = {
 
 dUnitTestCorrectTags = ['AGTCAT', 'ATGTCA', ]
 
-#def ParseTissueTagsFile():
-#	pass
 
-#dTissueTagsDictionary = ParseTissueTagsFile()
