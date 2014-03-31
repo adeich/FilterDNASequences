@@ -140,10 +140,7 @@ class FilterBank:
 		### SEQUENCE IS IN REVERSE DIRECTION AND WITH CORRECT COMPLEMENT PRIMERS. ###
 		elif self.oContainsForwardAndReversePrimers_Complement.Ask(sCompleteSequence):
 			bSequenceIsReversed = True
-			
-			# Call all bad for now.
-			oFailureRecorder.AddFailureReason('Is in reversed direction. Not accepting for now.')
-			
+				
 			# does sequence contain proper flanking sequences?
 			if not self.oContainsBothFlankingSequences_Complement.Ask(sCompleteSequence):
 				oFailureRecorder.AddFailureReason(sErrorMessage='Flanking sequences (complement) aren\'t correct.')
@@ -158,7 +155,7 @@ class FilterBank:
 			if not bSuppressQualiChecks:
 				tInsSeqBegEndPos = self.oContainsBothFlankingSequences_Complement.ReturnInsSeqBegEndPos(sCompleteSequence)
 				if not self.oQualiInsertSequenceAllAboveThreshold.Ask(sQualiSequence, tInsSeqBegEndPos):
-					oFailureRecorder.AddFailureReason('Quali sequence does not pass tests.')
+					oFailureRecorder.AddFailureReason('Quali sequence (complement) does not pass tests.')
 
 
 
