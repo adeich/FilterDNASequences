@@ -7,8 +7,8 @@ The program is initiated by calling **Main()** in **FilterDNASequences/Main.py**
 
 
 ###General Usage Instructions
-	- Check that **FilterDNASequences/ConstantsAndStructures.py** has the correct primer and flanking sequences for you. If incorrect, alter this file accordingly.
-	- You must supply a *tissue tag* csv file for **Main()**. Here is an example of such file (the header line *is* required):
+- Check that **FilterDNASequences/ConstantsAndStructures.py** has the correct primer and flanking sequences for you. If incorrect, alter this file accordingly.
+- You must supply a *tissue tag* csv file for **Main()**. Here is an example of such file (the header line *is* required):
         ```
         ORIGIN,LABEL,TAG
         testpatient1,sample1,ATT
@@ -18,4 +18,4 @@ The program is initiated by calling **Main()** in **FilterDNASequences/Main.py**
         testpatient2,sample5,AATC
         testpatient2,sample6,ACA
         ```
-	- Your supplied fasta file must be of the following format:
+- Your supplied fasta file must be of the following format:
