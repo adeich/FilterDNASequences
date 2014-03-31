@@ -10,10 +10,11 @@ from Bio.Alphabet import IUPAC
 
 class FilterBank:
 
-	# This class parses the csv file of tissue tags and can return them as a 
-	# list of namedtuples.
-	# This class used by FilterBank __init__().
 	class TissueTagLoader:
+		"""This subclass parses the csv file of tissue tags and can return them as a 
+		list of namedtuples.
+		Called by FilterBank __init__().
+		"""
 
 		def __init__(self, oTissueTagFile):
 			self.tTissueTag = namedtuple('tTissueTag', ['origin', 'label', 'tag'])
@@ -36,20 +37,26 @@ class FilterBank:
 		def ReturnTagList(self):
 			return self.lTissueTagLoaderTuples
 
-	# a simple class for keeping failure diagnoses externally non-reversable.
 	class StatusFailureRecorder:
+		""" a simple subclass for keeping failure diagnoses externally non-reversable. """
 		def __init__(self):
 			self.bSequenceSucceeds = True 
-		def SetFailureStatus(self):
+			self.lErrorsWithinSequence = []
+		def AddFailureReason(self, sErrorMessage=None):
 			self.bSequenceSucceeds = False
+			if sErrorMessage:
+				self.lErrorsWithinSequence.append(sErrorMessage)
 		def ReturnSuccessStatus(self):
 			return self.bSequenceSucceeds
+		def ReturnErrorList(self):
+			return self.lErrorsWithinSequence
 
 
-	# Stores sequence constants such as Forward Primer and Forward Primer Complement.
-	# It reads a few sequences from the constants file
-	# and also adds the sequences' complements, generated using the the Biopython library.  
 	class SequenceConstantsFacade:
+		""" Stores sequence constants such as Forward Primer and Forward Primer Complement.
+		This object on init loads in half its sequences from the constants file
+		and then adds the sequences' complements, generated on the fly with the Biopython library.  
+		"""
 		
 		def __init__(self, 
 			sFORWARD_PRIMER, 
@@ -85,8 +92,7 @@ class FilterBank:
 		self.oLog = oLog
 		self.oTagFile = oTagFile
 		self.oLoadedTags = self.TissueTagLoader(oTagFile)
-		self.oIsATissueTag = SequenceAnalysisClasses.IsATissueTag(
-			self.SequenceConstants, self.oLoadedTags.ReturnTagList())
+		self.oIsATissueTag = SequenceAnalysisClasses.IsATissueTag(self.oLoadedTags.ReturnTagList())
 		self.oContainsForwardAndReversePrimers = SequenceAnalysisClasses.ContainsForwardAndReversePrimers(
 			self.SequenceConstants)
 		self.oContainsForwardAndReversePrimers_Complement = SequenceAnalysisClasses.ContainsForwardAndReversePrimers_Complement(
@@ -95,58 +101,70 @@ class FilterBank:
 			self.SequenceConstants)
 		self.oContainsBothFlankingSequences_Complement = SequenceAnalysisClasses.ContainsBothFlankingSequences_Complement(
 			self.SequenceConstants)
+		self.oIsATissueTag_Complement = SequenceAnalysisClasses.IsATissueTag_Complement(
+			self.oLoadedTags.ReturnTagList())
 		self.oQualiInsertSequenceAllAboveThreshold = SequenceAnalysisClasses.QualiInsertSequenceAllAboveThreshold()
 
 
-	# Returns a ConstantsAndStructures.tSequenceReport namedtuple.
 	def RunCompositeAnalysisOnSequence(self, sIDString, sCompleteSequence, 
 		sQualiSequence, bSuppressQualiChecks=False):
+		""" Runs all checks on a single sequence and IDstring combo. Called by Main.py.
+		Returns a ConstantsAndStructures.tSequenceReport namedtuple.
+		"""
 
 		oFailureRecorder = self.StatusFailureRecorder()
 		bSequenceIsReversed = None
-		lErrorsWithinSequence = []
 
-		# is sequence in forward direction?
+
+		### SEQUENCE IS IN FORWARD DIRECTION WITH CORRECT FORWARD AND REVERSE PRIMERS. ### 
 		if self.oContainsForwardAndReversePrimers.Ask(sCompleteSequence):
 			bSequenceIsReversed = False
 
 			# does sequence contain proper flanking sequences?
 			if not self.oContainsBothFlankingSequences.Ask(sCompleteSequence):
-				oFailureRecorder.SetFailureStatus()
-				lErrorsWithinSequence.append('Flanking sequences aren\'t right.')
+				oFailureRecorder.AddFailureReason(sErrorMessage='Flanking sequences aren\'t correct.')
 
 			# does sequence begin with a proper tissue tag?
 			sPossibleTissueTag = self.oContainsForwardAndReversePrimers.ReturnSequencePrependingForwardPrimer(
 					sCompleteSequence)
 			if not self.oIsATissueTag.Ask(sPossibleTissueTag, bMatchEntireTagOnly=False):
-				oFailureRecorder.SetFailureStatus()
-				lErrorsWithinSequence.append('Tissue tag does not match tests.')
+				oFailureRecorder.AddFailureReason(sErrorMessage='Tissue tag does not match tests.')
 
 			# does the insert sequence pass its tests?
 			if not bSuppressQualiChecks:
-				#sInsSequence = self.oContainsBothFlankingSequences.ReturnInsertSequence(sCompleteSequence)
 				tInsSeqBegEndPos = self.oContainsBothFlankingSequences.ReturnInsSeqBegEndPos(sCompleteSequence)
 				if not self.oQualiInsertSequenceAllAboveThreshold.Ask(sQualiSequence, tInsSeqBegEndPos):
-					oFailureRecorder.SetFailureStatus()
-					lErrorsWithinSequence.append('Quali sequence does not pass tests.')
+					oFailureRecorder.AddFailureReason('Quali sequence does not pass tests.')
 
-		# otherwise, is sequence in reverse direction?
+
+		### SEQUENCE IS IN REVERSE DIRECTION AND WITH CORRECT COMPLEMENT PRIMERS. ###
 		elif self.oContainsForwardAndReversePrimers_Complement.Ask(sCompleteSequence):
 			bSequenceIsReversed = True
 			
 			# Call all bad for now.
-			oFailureRecorder.SetFailureStatus()
-			lErrorsWithinSequence.append('Is in reversed direction. Not accepting for now')
+			oFailureRecorder.AddFailureReason('Is in reversed direction. Not accepting for now.')
 			
-			if self.oContainsBothFlankingSequences_Complement.Ask(sCompleteSequence):
-				pass
-				# if begins with tissue tag
-				# if insert sequence passes tests
+			# does sequence contain proper flanking sequences?
+			if not self.oContainsBothFlankingSequences_Complement.Ask(sCompleteSequence):
+				oFailureRecorder.AddFailureReason(sErrorMessage='Flanking sequences (complement) aren\'t correct.')
 
-		# otherwise, the sequence is bad.
+			# does sequence *end* with a proper (complement) tissue tag?
+			sPossibleTissueTag = self.oContainsForwardAndReversePrimers_Complement.ReturnSequenceAppendingForwardPrimer(
+				sCompleteSequence)
+			if not self.oIsATissueTag_Complement.Ask(sPossibleTissueTag, bMatchEntireTagOnly=False):
+				oFailureRecorder.AddFailureReason(sErrorMessage='Tissue tag (complement) does not match tests.')
+
+			# does the insert sequence pass its tests?
+			if not bSuppressQualiChecks:
+				tInsSeqBegEndPos = self.oContainsBothFlankingSequences_Complement.ReturnInsSeqBegEndPos(sCompleteSequence)
+				if not self.oQualiInsertSequenceAllAboveThreshold.Ask(sQualiSequence, tInsSeqBegEndPos):
+					oFailureRecorder.AddFailureReason('Quali sequence does not pass tests.')
+
+
+
+		### ELSE SEQUENCE IS AUTOMATICALLY INCORRECT. ###
 		else:
-			oFailureRecorder.SetFailureStatus()
-			lErrorsWithinSequence.append('Contains no forward-reverse primer pairs, normal or complement.')
+			oFailureRecorder.AddFailureReason('Contains no forward-reverse primer pairs, normal or complement.')
 			
 
 		tOutputReport = ConstantsAndStructures.tSequenceReport(
@@ -162,7 +180,7 @@ class FilterBank:
 			end_pos_forward_primer = None,
 			start_pos_ending_seq = 0,
 			end_pos_ending_seq = 0,
-			errors_within_sequence = lErrorsWithinSequence
+			errors_within_sequence = oFailureRecorder.ReturnErrorList()
 			)
 
 		return tOutputReport

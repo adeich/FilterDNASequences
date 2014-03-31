@@ -17,7 +17,7 @@ def Main(sFastaFileName, sQualiFileName, sOutputSequenceFileName, sLogFileName, 
 		# create filtering object
 		oFilterBank = FilterBank.FilterBank(oTagFile, oLog)
 
-		# iterate through sequences, checking each if it passes the filters.
+		# iterate through sequences, checking for each whether it passes the filters.
 		for sIDString, sSequence, sQualiSequence in oSeqIterator:
 			tReport = oFilterBank.RunCompositeAnalysisOnSequence(sIDString, sSequence, sQualiSequence)
 			oLog.IngestReportAndLog(tReport)

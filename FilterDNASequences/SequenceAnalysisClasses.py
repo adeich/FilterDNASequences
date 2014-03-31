@@ -2,6 +2,8 @@ import re
 from collections import namedtuple
 import Exceptions
 import types
+from Bio.Seq import Seq
+from Bio.Alphabet import IUPAC
 # import SequenceConstantsObject
 
 
@@ -33,16 +35,18 @@ class ContainsForwardAndReversePrimers(SequenceSubstringCheck):
 
 class ContainsForwardAndReversePrimers_Complement(SequenceSubstringCheck):
 	def __init__(self, SequenceConstantsObject):
-		self.sRegex = '(.*){}.+{}.*'.format(SequenceConstantsObject.sREVERSE_PRIMER_COMPLEMENT,
+		self.sRegex = '(.*){}.+{}(.*)'.format(SequenceConstantsObject.sREVERSE_PRIMER_COMPLEMENT,
 			SequenceConstantsObject.sFORWARD_PRIMER_COMPLEMENT,)
 		self.oCompiledRegex = re.compile(self.sRegex)
+	def ReturnSequenceAppendingForwardPrimer(self, sCompleteSequence):
+		return self.oCompiledRegex.search(sCompleteSequence).group(2)
 	def Ask(self, sCompleteSequence):
 		return bool(self.oCompiledRegex.search(sCompleteSequence))
 
 
 class IsATissueTag(SequenceSubstringCheck):
 
-	def __init__(self, SequenceConstantsObject, lTissueTagTupleList):
+	def __init__(self, lTissueTagTupleList):
 		self.oCompiledRegex = None
 		self.lAllCompleteTags = set([sTuple.tag for sTuple in lTissueTagTupleList])
 		self.dAllPossibleSubtags = self.FillOutAllPossibleSubstrings(self.lAllCompleteTags)
@@ -87,6 +91,73 @@ class IsATissueTag(SequenceSubstringCheck):
 		self.dAllPossibleSubtags = {}
 		
 
+
+class IsATissueTag_Complement(SequenceSubstringCheck):
+
+	def __init__(self, lTissueTagTupleList):
+		self.oCompiledRegex = None
+		self.lAllCompleteTags = set([sTuple.tag for sTuple in lTissueTagTupleList])
+		self.lAllCompleteTags_Complement = self.GetSetOfComplementTags(self.lAllCompleteTags)
+		self.dAllPossibleSubtags = self.FillOutAllPossibleSubstrings(
+			self.lAllCompleteTags_Complement)
+
+	def GetSetOfComplementTags(self, oOriginalTagSet):
+			# self.sFORWARD_PRIMER_COMPLEMENT = str(Seq(
+			#	self.sFORWARD_PRIMER, IUPAC.unambiguous_dna).reverse_complement())
+		oComplementTagSet = set()
+		for sOriginalTag in oOriginalTagSet:
+			sComplementOfTag =  str(Seq(
+				sOriginalTag, IUPAC.unambiguous_dna).reverse_complement())
+			oComplementTagSet.add(sComplementOfTag)
+		return oComplementTagSet
+
+	def FillOutAllPossibleSubstrings(self, lTags):
+		""" This function is run on class init, but can be run at other times for testing. 
+		In the complement case,
+		substrings for 'EXAMPLE' will be ['EXA', 'EXAM', 'EXAMP', 'EXAMPL', 'EXAMPLE'].
+		"""
+		dAllPossibleSubtags = {}
+		for sTag in lTags:
+			# Only include subtags down to length 3, because we're not accepting any shorter.
+			for iStartPos in range(len(sTag) - 3, len(sTag) + 1):
+				sSubTag = sTag[:iStartPos]
+				if sSubTag in dAllPossibleSubtags:
+					dAllPossibleSubtags[sSubTag] += 1
+				else:
+					dAllPossibleSubtags[sSubTag] = 0
+		return dAllPossibleSubtags
+
+	def Ask(self, sPossibleTag, bMatchEntireTagOnly=False):
+		bIsTissueTag = False
+		if bMatchEntireTagOnly:
+			if sPossibleTag in self.lAllCompleteTags_Complement:
+				bIsTissueTag = True
+		else:
+			# Second condition, below, ensures that we avoid ambiguous positives:
+			# 'AT' could have come from both 'GAT' and 'AAT', so don't count it.
+			if sPossibleTag in self.dAllPossibleSubtags and self.dAllPossibleSubtags[sPossibleTag] < 1:
+				bIsTissueTag = True
+		return bIsTissueTag
+
+	# used only for unit testing.
+	def GetTagsAndPartialTags(self):
+		return {'tags': self.lAllCompleteTags_Complement, 'partial_tags': self.dAllPossibleSubtags}
+
+	# used only for unit testing.
+	def AddTag(self, sTag):
+		self.lAllCompleteTags_Complement.add(sTag)
+		self.dAllPossibleSubtags = self.FillOutAllPossibleSubstrings(self.lAllCompleteTags_Complement)
+
+	# used only for unit testing.
+	def ClearAllTags(self):
+		self.lAllCompleteTags = []
+		self.dAllPossibleSubtags = {}
+
+
+
+
+
+
 class ContainsBothFlankingSequences(SequenceSubstringCheck):
 
 	def __init__(self, SequenceConstantsObject):
@@ -116,26 +187,14 @@ class ContainsBothFlankingSequences(SequenceSubstringCheck):
 	def Ask(self, sCompleteSequence):
 		return bool(self.oCompiledRegex.search(sCompleteSequence))
 
-	def TestSelf(self):
-		# sequences which should succeed:
-		CSdU = SequenceConstantsObject.dUnitTestSequences
-		for sUnitTestSequence in [CSdU['everything good # 1'], CSdU['everything good # 2']]:
-			if self.Ask(sUnitTestSequence) == False:
-				raise Exceptions.SequenceCheckUnitTestFail('ContainsBothFlankingSequences 1')
-		# sequences which should fail:
-		for sUnitTestSequence in [CSdU['everything good # 3 (reversed and with complement)'],
-			CSdU['contains incorrect beginning flanking sequence']]:
-			if self.Ask(sUnitTestSequence) == True:
-				raise Exceptions.SequenceCheckUnitTestFail('ContainsBothFlankingSequences 2')
-		print 'Tested self from ContainsBothFlankingSequences'
-				
-
 class ContainsBothFlankingSequences_Complement(SequenceSubstringCheck):
+
 	def __init__(self, SequenceConstantsObject):
 		self.sRegex = '.+{}(.+){}.+'.format(
 			SequenceConstantsObject.sENDING_FLANKING_SEQUENCE_COMPLEMENT,
 			SequenceConstantsObject.sBEGINNING_FLANKING_SEQUENCE_COMPLEMENT)
 		self.oCompiledRegex = re.compile(self.sRegex)
+
 	def ReturnInsertSequence(self, sCompleteSequence):
 		sInsertSequence = None
 		try:
@@ -143,23 +202,20 @@ class ContainsBothFlankingSequences_Complement(SequenceSubstringCheck):
 		except AttributeError as e:
 			sInsertSequence = 'no insert sequence pattern matched.'
 		return sInsertSequence
+
+	# Return None for tuple if flanking sequences are not found.
+	def ReturnInsSeqBegEndPos(self, sCompleteSequence):
+		tInsSeqBegEndPos = None
+		try:
+			if self.oCompiledRegex.search(sCompleteSequence):
+				tInsSeqBegEndPos = self.oCompiledRegex.search(sCompleteSequence).span(1)
+			return tInsSeqBegEndPos
+		except AttributeError as e:
+			raise	
+
 	def Ask(self, sCompleteSequence):
 		return bool(self.oCompiledRegex.search(sCompleteSequence))
-	def TestSelf(self):
-		CSdU = SequenceConstantsObject.dUnitTestSequences
-		# sequences which should succeed:
-		for sUnitTestSequence in [CSdU['everything good # 3 (reversed and with complement)'],
-			CSdU['everything good # 4 (reversed and with complement)']]:
-			if self.Ask(sUnitTestSequence) == False:
-				raise Exceptions.SequenceCheckUnitTestFail('ContainsBothFlankingSequences_Complement 1')
-		# sequences which should fail:
-		for sUnitTestSequence in [CSdU['everything good # 1'],
-			CSdU['forward primer has random char inserted']]:
-			if self.Ask(sUnitTestSequence) == True:
-				raise Exceptions.SequenceCheckUnitTestFail('ContainsBothFlankingSequences_Complement 2')
 
-		print 'Tested self from ContainsBothFlankingSequences_Complement'
-				
 
 class InsertSequencePassesTests(SequenceSubstringCheck):
 	def __init__(self):

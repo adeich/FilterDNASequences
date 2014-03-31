@@ -26,7 +26,7 @@ class Log:
 		def GetErrorsDict(self):
 			return self.ErrorsSeen
 
-
+	# Log init.
 	def __init__(self, oLogFile):
 		self.oLogFile = oLogFile
 		self.AnalysisRecord = self.StatisticalAnalysisRecord()
